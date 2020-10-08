@@ -11,6 +11,7 @@ env:
   
 jobs:
   test:
+    # Build & test the project
     name: Test - Units & Integrations
     runs-on: ubuntu-latest
     steps:
@@ -24,6 +25,7 @@ jobs:
       - name: Maven Verify
         run: mvn -B clean verify -Pintegration-test
   artifact:
+    # Add the jar/pom files to Github packages
     name: Publish - GitHub Packages
     runs-on: ubuntu-latest
     needs: [test]
@@ -38,6 +40,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   docker:
+    # Build a docker file & deploy it to Github docker repo
     name: Publish - Docker Hub
     runs-on: ubuntu-latest
     needs: [test]
@@ -50,18 +53,23 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11
+          
+        # Create a version nr that is used in the docker version nr
       - name: Bump version and push tag
         uses: anothrNick/github-tag-action@1.22.0
         id: bump_version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WITH_V: true
+          
+          # Build the Docker image
       - name: Build image
         run: docker build . --file Dockerfile --tag image
 
       - name: Log into registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
 
+        # Push the docker image to Github Docker repo (as latest and NEW_TAG version
       - name: Push image
         run: |
             IMAGE_ID=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
